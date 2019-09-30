@@ -234,10 +234,11 @@
 		/**
 		 * @param {KeyboardEvent} e
 		 */
-		const handleInnerKeydown = (e) => {
-			host.postMessage('did-keydown', {
+		const handleInnerKeyboard = (e) => {
+			host.postMessage('did-keyboard', {
 				key: e.key,
 				keyCode: e.keyCode,
+				type: e.type,
 				code: e.code,
 				shiftKey: e.shiftKey,
 				altKey: e.altKey,
@@ -409,7 +410,8 @@
 					newFrame.contentDocument.open();
 				}
 
-				newFrame.contentWindow.addEventListener('keydown', handleInnerKeydown);
+				newFrame.contentWindow.addEventListener('keydown', handleInnerKeyboard);
+				newFrame.contentWindow.addEventListener('keyup', handleInnerKeyboard);
 
 				newFrame.contentWindow.addEventListener('DOMContentLoaded', e => {
 					// Workaround for https://bugs.chromium.org/p/chromium/issues/detail?id=978325

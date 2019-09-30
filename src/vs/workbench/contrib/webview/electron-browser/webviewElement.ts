@@ -27,9 +27,10 @@ import { registerFileProtocol } from 'vs/workbench/contrib/webview/electron-brow
 import { areWebviewInputOptionsEqual } from '../browser/webviewEditorService';
 import { WebviewFindDelegate, WebviewFindWidget } from '../browser/webviewFindWidget';
 
-interface IKeydownEvent {
+interface IKeyboardEvent {
 	key: string;
 	keyCode: number;
+	type: string;
 	code: string;
 	shiftKey: boolean;
 	altKey: boolean;
@@ -163,11 +164,11 @@ class WebviewKeyboardHandler extends Disposable {
 
 		this._register(addDisposableListener(this._webview, 'ipc-message', (event) => {
 			switch (event.channel) {
-				case 'did-keydown':
+				case 'did-keyboard':
 					// Electron: workaround for https://github.com/electron/electron/issues/14258
 					// We have to detect keyboard events in the <webview> and dispatch them to our
 					// keybinding service because these events do not bubble to the parent window anymore.
-					this.handleKeydown(event.args[0]);
+					this.handleKeyboard(event.args[0]);
 					return;
 
 				case 'did-focus':
@@ -203,15 +204,22 @@ class WebviewKeyboardHandler extends Disposable {
 		return undefined;
 	}
 
-	private handleKeydown(event: IKeydownEvent): void {
+	private handleKeyboard(event: IKeyboardEvent): void {
 		// Create a fake KeyboardEvent from the data provided
-		const emulatedKeyboardEvent = new KeyboardEvent('keydown', event);
+		const emulatedKeyboardEventForWebview = new KeyboardEvent(event.type, event);
+
 		// Force override the target
-		Object.defineProperty(emulatedKeyboardEvent, 'target', {
+		Object.defineProperty(emulatedKeyboardEventForWebview, 'target', {
 			get: () => this._webview
 		});
-		// And re-dispatch
-		window.dispatchEvent(emulatedKeyboardEvent);
+		// And re-dispatch to the webview
+		window.dispatchEvent(emulatedKeyboardEventForWebview);
+
+		//Create a fake KeyboardEvent from the data provided
+		const emulatedKeyboardEventForBody = new KeyboardEvent(event.type, event);
+
+		// Re-dispatch to the body, triggers the listeners of DOM keyboard events
+		document.body.dispatchEvent(emulatedKeyboardEventForBody);
 	}
 }
 
